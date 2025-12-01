@@ -303,6 +303,7 @@ function attachPadEvents() {
 function init() {
   attachPadEvents();
   document.getElementById('new-game').addEventListener('click', newGame);
+  difficultyEl.addEventListener('change', newGame);
   document.getElementById('reset').addEventListener('click', () => {
     const confirmReset = window.confirm('确定要重置当前棋盘吗？');
     if (confirmReset) resetBoard();
