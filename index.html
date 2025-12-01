@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>网页数独</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>数独</h1>
+      <p class="subtitle">随时随地在浏览器中解谜</p>
+    </div>
+    <div class="controls">
+      <label class="difficulty">难度：
+        <select id="difficulty">
+          <option value="easy">简单</option>
+          <option value="medium" selected>中等</option>
+          <option value="hard">困难</option>
+        </select>
+      </label>
+      <button id="new-game" class="primary">新游戏</button>
+      <button id="reset">重置</button>
+      <button id="hint">提示</button>
+      <button id="check">检查</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="board-wrapper">
+      <div id="board" class="board" role="grid" aria-label="数独棋盘"></div>
+      <div class="status" id="status" aria-live="polite"></div>
+    </section>
+
+    <section class="pad" aria-label="数字输入">
+      <button class="pad-btn" data-number="1">1</button>
+      <button class="pad-btn" data-number="2">2</button>
+      <button class="pad-btn" data-number="3">3</button>
+      <button class="pad-btn" data-number="4">4</button>
+      <button class="pad-btn" data-number="5">5</button>
+      <button class="pad-btn" data-number="6">6</button>
+      <button class="pad-btn" data-number="7">7</button>
+      <button class="pad-btn" data-number="8">8</button>
+      <button class="pad-btn" data-number="9">9</button>
+      <button class="pad-btn secondary" data-number="0">清除</button>
+    </section>
+  </main>
+
+  <footer class="footer">支持键盘输入与触控，适配桌面与移动端。</footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
