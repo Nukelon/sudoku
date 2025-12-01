@@ -103,7 +103,8 @@ main {
   display: grid;
   grid-template-columns: repeat(9, minmax(32px, 1fr));
   grid-template-rows: repeat(9, minmax(32px, 1fr));
-  width: min(92vw, 560px);
+  width: min(100%, 560px);
+  max-width: min(92vw, 560px);
   aspect-ratio: 1 / 1;
   background: var(--surface);
   border-radius: 16px;
