@@ -219,6 +219,6 @@ main {
     align-items: stretch;
   }
   .board {
-    width: min(100%, 520px);
+    width: min(96vw, 520px);
   }
 }
