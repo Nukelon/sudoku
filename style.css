@@ -11,6 +11,11 @@
 
 * { box-sizing: border-box; }
 
+html {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: linear-gradient(180deg, #ecf2ff 0%, #fefefe 50%, #f6f7fb 100%);
@@ -203,8 +208,8 @@ main {
   }
   .controls button,
   .controls select {
-    flex: 1 1 calc(50% - 8px);
-    min-width: 140px;
+    flex: 1 1 calc(50% - 6px);
+    min-width: 120px;
     text-align: center;
   }
   .topbar {
