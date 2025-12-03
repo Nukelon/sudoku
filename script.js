@@ -1,20 +1,226 @@
-const BOARD_SIZE = 9;
-const BOX_SIZE = 3;
 const variantConfigs = {
-  classic: { label: '经典数独', description: '行、列、宫均包含 1-9' },
-  diagonal: { label: '对角线数独', description: '额外要求两条对角线包含 1-9' },
+  classic: {
+    label: '经典数独',
+    description: '行、列、宫均包含 1-9',
+    size: 9,
+    box: { rows: 3, cols: 3 },
+  },
+  diagonal: {
+    label: '对角线数独',
+    description: '额外要求两条对角线包含 1-9',
+    size: 9,
+    box: { rows: 3, cols: 3 },
+    diagonal: true,
+  },
   hyper: {
     label: '超数独',
     description: '在四个中心 3×3 宫内也需包含 1-9',
+    size: 9,
+    box: { rows: 3, cols: 3 },
+    hyperCenters: [
+      [1, 1],
+      [1, 5],
+      [5, 1],
+      [5, 5],
+    ],
+  },
+  mini: {
+    label: '迷你数独',
+    description: '6×6 棋盘，宫为 2×3，使用数字 1-6',
+    size: 6,
+    box: { rows: 2, cols: 3 },
+    digits: [1, 2, 3, 4, 5, 6],
+  },
+  irregular: {
+    label: '不规则数独',
+    description: '宫格为不规则形状，同一色块需包含 1-9',
+    size: 9,
+    box: null,
+    regions: [
+      [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [2, 0],
+        [2, 1],
+        [3, 0],
+        [3, 1],
+        [4, 0],
+      ],
+      [
+        [0, 2],
+        [0, 3],
+        [1, 2],
+        [1, 3],
+        [2, 2],
+        [2, 3],
+        [3, 2],
+        [3, 3],
+        [4, 1],
+      ],
+      [
+        [0, 4],
+        [0, 5],
+        [1, 4],
+        [1, 5],
+        [2, 4],
+        [2, 5],
+        [3, 4],
+        [3, 5],
+        [4, 2],
+      ],
+      [
+        [0, 6],
+        [0, 7],
+        [1, 6],
+        [1, 7],
+        [2, 6],
+        [2, 7],
+        [3, 6],
+        [3, 7],
+        [4, 3],
+      ],
+      [
+        [0, 8],
+        [1, 8],
+        [2, 8],
+        [3, 8],
+        [4, 4],
+        [4, 5],
+        [5, 4],
+        [5, 5],
+        [6, 4],
+      ],
+      [
+        [4, 6],
+        [4, 7],
+        [4, 8],
+        [5, 6],
+        [5, 7],
+        [5, 8],
+        [6, 6],
+        [6, 7],
+        [6, 8],
+      ],
+      [
+        [5, 0],
+        [5, 1],
+        [6, 0],
+        [6, 1],
+        [7, 0],
+        [7, 1],
+        [8, 0],
+        [8, 1],
+        [8, 2],
+      ],
+      [
+        [5, 2],
+        [5, 3],
+        [6, 2],
+        [6, 3],
+        [7, 2],
+        [7, 3],
+        [8, 3],
+        [8, 4],
+        [7, 4],
+      ],
+      [
+        [5, 9 - 1],
+        [6, 9 - 1],
+        [7, 9 - 1],
+        [8, 9 - 1],
+        [6, 5],
+        [6, 4],
+        [7, 5],
+        [7, 6],
+        [7, 7],
+      ],
+    ],
+  },
+  geometry: {
+    label: '多重几何',
+    description: '对角线 + 超数独的组合，中央高亮提示',
+    size: 9,
+    box: { rows: 3, cols: 3 },
+    diagonal: true,
+    hyperCenters: [
+      [1, 1],
+      [1, 5],
+      [5, 1],
+      [5, 5],
+    ],
+  },
+  killer: {
+    label: '杀手数独',
+    description: '无提示数字，按区域和数值和限制',
+    size: 9,
+    box: { rows: 3, cols: 3 },
+    cages: [
+      { sum: 10, cells: [ [0, 0], [0, 1], [1, 0] ] },
+      { sum: 12, cells: [ [0, 2], [0, 3], [1, 1] ] },
+      { sum: 17, cells: [ [0, 4], [1, 4], [1, 3] ] },
+      { sum: 20, cells: [ [0, 5], [0, 6], [1, 5], [1, 6] ] },
+      { sum: 10, cells: [ [0, 7], [0, 8], [1, 7] ] },
+      { sum: 15, cells: [ [1, 2], [2, 2], [2, 1] ] },
+      { sum: 13, cells: [ [1, 8], [2, 7], [2, 8] ] },
+      { sum: 11, cells: [ [2, 0], [3, 0] ] },
+      { sum: 21, cells: [ [2, 3], [2, 4], [3, 1], [3, 2] ] },
+      { sum: 12, cells: [ [2, 5], [2, 6], [3, 3] ] },
+      { sum: 14, cells: [ [3, 4], [3, 5], [3, 6] ] },
+      { sum: 16, cells: [ [3, 7], [4, 7], [4, 8] ] },
+      { sum: 12, cells: [ [3, 8], [4, 6] ] },
+      { sum: 15, cells: [ [4, 0], [4, 1], [5, 0] ] },
+      { sum: 11, cells: [ [4, 2], [4, 3] ] },
+      { sum: 19, cells: [ [4, 4], [4, 5], [5, 4], [5, 5] ] },
+      { sum: 9, cells: [ [4, 9 - 1], [5, 9 - 1] ] },
+      { sum: 10, cells: [ [5, 1], [5, 2], [6, 1] ] },
+      { sum: 16, cells: [ [5, 3], [6, 2], [6, 3] ] },
+      { sum: 13, cells: [ [5, 6], [5, 7], [5, 8] ] },
+      { sum: 10, cells: [ [6, 0], [7, 0], [7, 1] ] },
+      { sum: 21, cells: [ [6, 4], [6, 5], [7, 3], [7, 4] ] },
+      { sum: 13, cells: [ [6, 6], [6, 7] ] },
+      { sum: 11, cells: [ [6, 8], [7, 8] ] },
+      { sum: 14, cells: [ [7, 2], [8, 2], [8, 3] ] },
+      { sum: 16, cells: [ [7, 5], [7, 6], [8, 5] ] },
+      { sum: 7, cells: [ [7, 7], [8, 6] ] },
+      { sum: 15, cells: [ [8, 0], [8, 1], [8, 4] ] },
+      { sum: 10, cells: [ [8, 7], [8, 8] ] },
+    ],
+    preset: {
+      puzzle: [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+      ],
+      solution: [
+        [5, 3, 4, 6, 7, 8, 9, 1, 2],
+        [6, 7, 2, 1, 9, 5, 3, 4, 8],
+        [1, 9, 8, 3, 4, 2, 5, 6, 7],
+        [8, 5, 9, 7, 6, 1, 4, 2, 3],
+        [4, 2, 6, 8, 5, 3, 7, 9, 1],
+        [7, 1, 3, 9, 2, 4, 8, 5, 6],
+        [9, 6, 1, 5, 3, 7, 2, 8, 4],
+        [2, 8, 7, 4, 1, 9, 6, 3, 5],
+        [3, 4, 5, 2, 8, 6, 1, 7, 9],
+      ],
+    },
   },
 };
+
 const difficultyClues = {
   easy: 44,
   medium: 36,
   hard: 28,
 };
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 function ensureFreshAssets() {
   if ('serviceWorker' in navigator) {
@@ -48,6 +254,10 @@ const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const difficultyEl = document.getElementById('difficulty');
 const variantEl = document.getElementById('variant');
+const padEl = document.querySelector('.pad');
+
+const peerCache = new Map();
+const puzzleCache = new Map();
 
 function shuffle(arr) {
   const copy = [...arr];
@@ -62,58 +272,84 @@ function deepCopy(board) {
   return board.map((row) => [...row]);
 }
 
-function getVariantPeers(row, col, variant) {
+function digitsForVariant(variantKey) {
+  const { size, digits } = variantConfigs[variantKey];
+  if (digits) return digits;
+  return Array.from({ length: size }, (_, i) => i + 1);
+}
+
+function getVariantPeers(row, col, variantKey) {
+  const config = variantConfigs[variantKey];
+  const cacheKey = `${variantKey}-${row}-${col}`;
+  if (peerCache.has(cacheKey)) return peerCache.get(cacheKey);
+
   const peers = new Set();
 
-  for (let i = 0; i < BOARD_SIZE; i += 1) {
+  for (let i = 0; i < config.size; i += 1) {
     peers.add(`${row}-${i}`);
     peers.add(`${i}-${col}`);
   }
 
-  const boxRow = Math.floor(row / BOX_SIZE) * BOX_SIZE;
-  const boxCol = Math.floor(col / BOX_SIZE) * BOX_SIZE;
-  for (let r = 0; r < BOX_SIZE; r += 1) {
-    for (let c = 0; c < BOX_SIZE; c += 1) {
-      peers.add(`${boxRow + r}-${boxCol + c}`);
+  if (config.box) {
+    const { rows, cols } = config.box;
+    const boxRow = Math.floor(row / rows) * rows;
+    const boxCol = Math.floor(col / cols) * cols;
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        peers.add(`${boxRow + r}-${boxCol + c}`);
+      }
     }
   }
 
-  if (variant === 'diagonal') {
+  if (config.diagonal) {
     if (row === col) {
-      for (let i = 0; i < BOARD_SIZE; i += 1) {
+      for (let i = 0; i < config.size; i += 1) {
         peers.add(`${i}-${i}`);
       }
     }
-    if (row + col === BOARD_SIZE - 1) {
-      for (let i = 0; i < BOARD_SIZE; i += 1) {
-        peers.add(`${i}-${BOARD_SIZE - 1 - i}`);
+    if (row + col === config.size - 1) {
+      for (let i = 0; i < config.size; i += 1) {
+        peers.add(`${i}-${config.size - 1 - i}`);
       }
     }
   }
 
-  if (variant === 'hyper') {
-    const hyperStarts = [
-      [1, 1],
-      [1, 5],
-      [5, 1],
-      [5, 5],
-    ];
-    const inHyper = hyperStarts.find(
+  if (config.hyperCenters) {
+    const { rows, cols } = config.box;
+    const inHyper = config.hyperCenters.find(
       ([startRow, startCol]) =>
-        row >= startRow && row < startRow + BOX_SIZE && col >= startCol && col < startCol + BOX_SIZE,
+        row >= startRow && row < startRow + rows && col >= startCol && col < startCol + cols,
     );
     if (inHyper) {
       const [startRow, startCol] = inHyper;
-      for (let r = 0; r < BOX_SIZE; r += 1) {
-        for (let c = 0; c < BOX_SIZE; c += 1) {
+      for (let r = 0; r < rows; r += 1) {
+        for (let c = 0; c < cols; c += 1) {
           peers.add(`${startRow + r}-${startCol + c}`);
         }
       }
     }
   }
 
+  if (config.regions) {
+    const regionIndex = config.regions.findIndex((region) =>
+      region.some(([r, c]) => r === row && c === col),
+    );
+    if (regionIndex !== -1) {
+      config.regions[regionIndex].forEach(([r, c]) => peers.add(`${r}-${c}`));
+    }
+  }
+
+  if (config.extraRegions) {
+    const region = config.extraRegions.find((cells) => cells.some(([r, c]) => r === row && c === col));
+    if (region) {
+      region.forEach(([r, c]) => peers.add(`${r}-${c}`));
+    }
+  }
+
   peers.delete(`${row}-${col}`);
-  return Array.from(peers).map((key) => key.split('-').map(Number));
+  const result = Array.from(peers).map((key) => key.split('-').map(Number));
+  peerCache.set(cacheKey, result);
+  return result;
 }
 
 function isSafe(board, row, col, num, variant) {
@@ -122,10 +358,12 @@ function isSafe(board, row, col, num, variant) {
 }
 
 function solve(board, variant) {
-  for (let row = 0; row < BOARD_SIZE; row += 1) {
-    for (let col = 0; col < BOARD_SIZE; col += 1) {
+  const { size } = variantConfigs[variant];
+  const numbers = digitsForVariant(variant);
+  for (let row = 0; row < size; row += 1) {
+    for (let col = 0; col < size; col += 1) {
       if (board[row][col] === 0) {
-        for (const num of shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9])) {
+        for (const num of shuffle(numbers)) {
           if (isSafe(board, row, col, num, variant)) {
             board[row][col] = num;
             if (solve(board, variant)) return true;
@@ -141,11 +379,13 @@ function solve(board, variant) {
 
 function countSolutions(board, limit = 2, variant) {
   let count = 0;
+  const numbers = digitsForVariant(variant);
+  const { size } = variantConfigs[variant];
   function backtrack() {
-    for (let row = 0; row < BOARD_SIZE; row += 1) {
-      for (let col = 0; col < BOARD_SIZE; col += 1) {
+    for (let row = 0; row < size; row += 1) {
+      for (let col = 0; col < size; col += 1) {
         if (board[row][col] === 0) {
-          for (let num = 1; num <= BOARD_SIZE; num += 1) {
+          for (const num of numbers) {
             if (isSafe(board, row, col, num, variant)) {
               board[row][col] = num;
               backtrack();
@@ -164,27 +404,34 @@ function countSolutions(board, limit = 2, variant) {
 }
 
 function generateSolved(variant) {
-  const board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
+  const { size } = variantConfigs[variant];
+  const board = Array.from({ length: size }, () => Array(size).fill(0));
   solve(board, variant);
   return board;
 }
 
 function generatePuzzle(difficulty, variant) {
+  const config = variantConfigs[variant];
+  if (config.preset) {
+    return { puzzleBoard: deepCopy(config.preset.puzzle), solutionBoard: deepCopy(config.preset.solution) };
+  }
   const filled = generateSolved(variant);
   const puzzleBoard = deepCopy(filled);
-  const clues = difficultyClues[difficulty] ?? difficultyClues.medium;
-  const cells = shuffle([...Array(BOARD_SIZE * BOARD_SIZE).keys()]);
+  const totalCells = config.size * config.size;
+  const baseClues = difficultyClues[difficulty] ?? difficultyClues.medium;
+  const clues = Math.min(baseClues, Math.max(Math.floor(totalCells * 0.45), config.size * 2));
+  const cells = shuffle([...Array(totalCells).keys()]);
   let removed = 0;
 
   for (const index of cells) {
-    const row = Math.floor(index / BOARD_SIZE);
-    const col = index % BOARD_SIZE;
+    const row = Math.floor(index / config.size);
+    const col = index % config.size;
     const backup = puzzleBoard[row][col];
     puzzleBoard[row][col] = 0;
 
     const temp = deepCopy(puzzleBoard);
     const solutions = countSolutions(temp, 2, variant);
-    const remaining = BOARD_SIZE * BOARD_SIZE - removed - 1;
+    const remaining = config.size * config.size - removed - 1;
     if (solutions !== 1 || remaining < clues) {
       puzzleBoard[row][col] = backup;
     } else {
@@ -195,19 +442,32 @@ function generatePuzzle(difficulty, variant) {
   return { puzzleBoard, solutionBoard: filled };
 }
 
+function clearBoardClasses() {
+  boardEl.querySelectorAll('.cell').forEach((cell) => {
+    cell.classList.remove('same-line', 'same-value', 'hyper', 'diagonal', 'irregular', 'geometry', 'cage');
+    cell.removeAttribute('data-cage-label');
+  });
+}
+
 function buildBoard() {
+  const config = variantConfigs[currentVariant];
   boardEl.innerHTML = '';
-  for (let row = 0; row < BOARD_SIZE; row += 1) {
-    for (let col = 0; col < BOARD_SIZE; col += 1) {
+  boardEl.style.gridTemplateColumns = `repeat(${config.size}, minmax(0, 1fr))`;
+  boardEl.style.gridTemplateRows = `repeat(${config.size}, minmax(0, 1fr))`;
+
+  for (let row = 0; row < config.size; row += 1) {
+    for (let col = 0; col < config.size; col += 1) {
       const cell = document.createElement('button');
       cell.className = 'cell';
       cell.dataset.row = row;
       cell.dataset.col = col;
-      if ((col + 1) % BOX_SIZE === 0 && col !== BOARD_SIZE - 1) {
-        cell.classList.add('box-border-right');
-      }
-      if ((row + 1) % BOX_SIZE === 0 && row !== BOARD_SIZE - 1) {
-        cell.classList.add('box-border-bottom');
+      if (config.box) {
+        if ((col + 1) % config.box.cols === 0 && col !== config.size - 1) {
+          cell.classList.add('box-border-right');
+        }
+        if ((row + 1) % config.box.rows === 0 && row !== config.size - 1) {
+          cell.classList.add('box-border-bottom');
+        }
       }
       cell.setAttribute('role', 'gridcell');
       cell.setAttribute('aria-label', `行${row + 1}列${col + 1}`);
@@ -218,6 +478,7 @@ function buildBoard() {
 }
 
 function renderBoard() {
+  const config = variantConfigs[currentVariant];
   const cells = boardEl.querySelectorAll('.cell');
   cells.forEach((cell) => {
     const row = Number(cell.dataset.row);
@@ -228,14 +489,56 @@ function renderBoard() {
     cell.dataset.fixed = fixed;
     cell.classList.toggle('conflict', false);
   });
+  applyConstraintHints(config);
 }
 
-function selectCell(cell) {
-  if (cell.dataset.fixed === 'true') return;
-  if (selected) selected.classList.remove('selected');
-  selected = cell;
-  selected.classList.add('selected');
-  highlightRelated();
+function applyConstraintHints(config) {
+  clearBoardClasses();
+  const cells = boardEl.querySelectorAll('.cell');
+  cells.forEach((cell) => {
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    if (config.diagonal && (row === col || row + col === config.size - 1)) {
+      cell.classList.add('diagonal');
+    }
+    if (config.hyperCenters && config.box) {
+      config.hyperCenters.forEach(([startRow, startCol]) => {
+        if (
+          row >= startRow && row < startRow + config.box.rows &&
+          col >= startCol && col < startCol + config.box.cols
+        ) {
+          cell.classList.add('hyper');
+        }
+      });
+    }
+    if (config.regions) {
+      const regionIndex = config.regions.findIndex((region) =>
+        region.some(([r, c]) => r === row && c === col),
+      );
+      if (regionIndex !== -1) {
+        cell.dataset.region = regionIndex;
+        cell.classList.add('irregular');
+      }
+    } else {
+      cell.removeAttribute('data-region');
+    }
+  });
+
+  if (config.cages) {
+    config.cages.forEach((cage, idx) => {
+      const sorted = [...cage.cells].sort(([r1, c1], [r2, c2]) => (r1 === r2 ? c1 - c2 : r1 - r2));
+      const [labelRow, labelCol] = sorted[0];
+      cage.cells.forEach(([r, c]) => {
+        const cell = boardEl.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+        if (cell) {
+          cell.classList.add('cage');
+          if (r === labelRow && c === labelCol) {
+            cell.dataset.cageLabel = `${cage.sum} (#${idx + 1})`;
+          }
+        }
+      });
+    });
+  }
 }
 
 function highlightRelated() {
@@ -276,6 +579,7 @@ function handleInput(num) {
 }
 
 function validateConflicts() {
+  const config = variantConfigs[currentVariant];
   const cells = boardEl.querySelectorAll('.cell');
   cells.forEach((cell) => cell.classList.remove('conflict'));
 
@@ -290,11 +594,27 @@ function validateConflicts() {
 
     if (hasConflict) cell.classList.add('conflict');
   }
+
+  if (config.cages) {
+    config.cages.forEach((cage) => {
+      const values = cage.cells.map(([r, c]) => puzzle[r][c]).filter((v) => v !== 0);
+      const hasDuplicates = new Set(values).size !== values.length;
+      const sum = values.reduce((a, b) => a + b, 0);
+      const exceeds = sum > cage.sum;
+      if (hasDuplicates || exceeds || (values.length === cage.cells.length && sum !== cage.sum)) {
+        cage.cells.forEach(([r, c]) => {
+          const cell = boardEl.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+          if (cell) cell.classList.add('conflict');
+        });
+      }
+    });
+  }
 }
 
 function isComplete() {
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  const config = variantConfigs[currentVariant];
+  for (let r = 0; r < config.size; r += 1) {
+    for (let c = 0; c < config.size; c += 1) {
       if (puzzle[r][c] === 0 || puzzle[r][c] !== solution[r][c]) return false;
     }
   }
@@ -306,18 +626,47 @@ function setStatus(text, success = false) {
   statusEl.style.color = success ? '#16a34a' : 'var(--muted)';
 }
 
+function buildPad() {
+  const digits = digitsForVariant(currentVariant);
+  padEl.innerHTML = '';
+  digits.forEach((n) => {
+    const btn = document.createElement('button');
+    btn.className = 'pad-btn';
+    btn.dataset.number = n;
+    btn.textContent = n;
+    btn.addEventListener('click', () => handleInput(Number(n)));
+    padEl.appendChild(btn);
+  });
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'pad-btn secondary';
+  clearBtn.dataset.number = 0;
+  clearBtn.textContent = '清除';
+  clearBtn.addEventListener('click', () => handleInput(0));
+  padEl.appendChild(clearBtn);
+}
+
 function newGame() {
   currentVariant = variantEl.value;
-  const { puzzleBoard, solutionBoard } = generatePuzzle(difficultyEl.value, currentVariant);
-  basePuzzle = deepCopy(puzzleBoard);
-  puzzle = deepCopy(puzzleBoard);
-  solution = solutionBoard;
-  buildBoard();
-  renderBoard();
-  selected = null;
-  setStatus(
-    `已生成${variantConfigs[currentVariant]?.label ?? '新玩法'}棋盘，祝解谜愉快！`,
-  );
+  const cacheKey = `${currentVariant}-${difficultyEl.value}`;
+  setStatus('正在生成棋盘，请稍候…');
+  requestAnimationFrame(() => {
+    let generated;
+    if (puzzleCache.has(cacheKey)) {
+      generated = puzzleCache.get(cacheKey);
+    } else {
+      generated = generatePuzzle(difficultyEl.value, currentVariant);
+      puzzleCache.set(cacheKey, generated);
+    }
+    basePuzzle = deepCopy(generated.puzzleBoard);
+    puzzle = deepCopy(generated.puzzleBoard);
+    solution = generated.solutionBoard;
+    buildBoard();
+    renderBoard();
+    buildPad();
+    selected = null;
+    validateConflicts();
+    setStatus(`已生成${variantConfigs[currentVariant]?.label ?? '新玩法'}棋盘，祝解谜愉快！`);
+  });
 }
 
 function resetBoard() {
@@ -329,9 +678,10 @@ function resetBoard() {
 }
 
 function giveHint() {
+  const config = variantConfigs[currentVariant];
   const empties = [];
-  for (let r = 0; r < BOARD_SIZE; r += 1) {
-    for (let c = 0; c < BOARD_SIZE; c += 1) {
+  for (let r = 0; r < config.size; r += 1) {
+    for (let c = 0; c < config.size; c += 1) {
       if (puzzle[r][c] === 0) empties.push([r, c]);
     }
   }
@@ -356,7 +706,8 @@ function checkBoard() {
 
 function handleKeyboard(e) {
   if (!selected) return;
-  if (e.key >= '1' && e.key <= '9') {
+  const digits = digitsForVariant(currentVariant).map(String);
+  if (digits.includes(e.key)) {
     handleInput(Number(e.key));
   } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0' || e.key === ' ') {
     handleInput(0);
@@ -364,11 +715,12 @@ function handleKeyboard(e) {
 }
 
 function attachPadEvents() {
-  document.querySelectorAll('.pad-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const num = Number(btn.dataset.number);
-      handleInput(num);
-    });
+  padEl.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (target.dataset.number) {
+      handleInput(Number(target.dataset.number));
+    }
   });
 }
 
@@ -376,8 +728,14 @@ function init() {
   ensureFreshAssets();
   attachPadEvents();
   document.getElementById('new-game').addEventListener('click', newGame);
-  difficultyEl.addEventListener('change', newGame);
-  variantEl.addEventListener('change', newGame);
+  difficultyEl.addEventListener('change', () => {
+    puzzleCache.delete(`${currentVariant}-${difficultyEl.value}`);
+    newGame();
+  });
+  variantEl.addEventListener('change', () => {
+    peerCache.clear();
+    newGame();
+  });
   document.getElementById('reset').addEventListener('click', () => {
     const confirmReset = window.confirm('确定要重置当前棋盘吗？');
     if (confirmReset) resetBoard();
