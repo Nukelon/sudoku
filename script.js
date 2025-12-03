@@ -316,6 +316,8 @@ function generatePuzzle(difficulty, variant) {
   const clues = Math.max(Math.floor((baseClues / 81) * boardSize * boardSize), boardSize * 2);
   const cells = shuffle([...Array(boardSize * boardSize).keys()]);
   let removed = 0;
+  const enforceUniqueness = !variantConfigs[variant].regionMap;
+  const targetRemoval = boardSize * boardSize - clues;
 
   for (const index of cells) {
     const row = Math.floor(index / boardSize);
@@ -323,13 +325,18 @@ function generatePuzzle(difficulty, variant) {
     const backup = puzzleBoard[row][col];
     puzzleBoard[row][col] = 0;
 
-    const temp = deepCopy(puzzleBoard);
-    const solutions = countSolutions(temp, 2, variant);
-    const remaining = boardSize * boardSize - removed - 1;
-    if (solutions !== 1 || remaining < clues) {
-      puzzleBoard[row][col] = backup;
+    if (enforceUniqueness) {
+      const temp = deepCopy(puzzleBoard);
+      const solutions = countSolutions(temp, 2, variant);
+      const remaining = boardSize * boardSize - removed - 1;
+      if (solutions !== 1 || remaining < clues) {
+        puzzleBoard[row][col] = backup;
+      } else {
+        removed += 1;
+      }
     } else {
       removed += 1;
+      if (removed >= targetRemoval) break;
     }
   }
 
@@ -372,6 +379,91 @@ function buildBoard() {
       boardEl.appendChild(cell);
     }
   }
+
+  if (currentVariantConfig.hyperStarts) {
+    addHyperBorders();
+  }
+  if (currentVariantConfig.cages) {
+    decorateCages();
+  }
+}
+
+function addHyperBorders() {
+  const starts = currentVariantConfig.hyperStarts ?? [];
+  boardEl.querySelectorAll('.cell.hyper-region').forEach((cell) => {
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    starts.forEach(([startRow, startCol]) => {
+      const endRow = startRow + boxRows - 1;
+      const endCol = startCol + boxCols - 1;
+      if (row === startRow) cell.classList.add('hyper-border-top');
+      if (row === endRow) cell.classList.add('hyper-border-bottom');
+      if (col === startCol) cell.classList.add('hyper-border-left');
+      if (col === endCol) cell.classList.add('hyper-border-right');
+    });
+  });
+}
+
+function decorateCages() {
+  const cells = boardEl.querySelectorAll('.cell');
+  cells.forEach((cell) => {
+    cell.classList.remove(
+      'cage-border-top',
+      'cage-border-right',
+      'cage-border-bottom',
+      'cage-border-left',
+    );
+    const label = cell.querySelector('.cage-label');
+    if (label) label.remove();
+  });
+
+  const lookup = new Map();
+  currentVariantConfig.cages.forEach((cage, index) => {
+    cage.cells.forEach(([r, c]) => lookup.set(`${r}-${c}`, index));
+  });
+
+  const getCell = (r, c) =>
+    boardEl.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+
+  currentVariantConfig.cages.forEach((cage) => {
+    const anchor = cage.cells.reduce(
+      (best, current) => {
+        if (!best) return current;
+        const [br, bc] = best;
+        const [cr, cc] = current;
+        if (cr < br) return current;
+        if (cr === br && cc < bc) return current;
+        return best;
+      },
+      null,
+    );
+
+    if (anchor) {
+      const [ar, ac] = anchor;
+      const anchorCell = getCell(ar, ac);
+      if (anchorCell) {
+        const label = document.createElement('span');
+        label.className = 'cage-label';
+        label.textContent = cage.sum;
+        anchorCell.appendChild(label);
+      }
+    }
+
+    cage.cells.forEach(([r, c]) => {
+      const cell = getCell(r, c);
+      if (!cell) return;
+      const neighbors = {
+        top: lookup.get(`${r - 1}-${c}`),
+        right: lookup.get(`${r}-${c + 1}`),
+        bottom: lookup.get(`${r + 1}-${c}`),
+        left: lookup.get(`${r}-${c - 1}`),
+      };
+      if (neighbors.top !== lookup.get(`${r}-${c}`)) cell.classList.add('cage-border-top');
+      if (neighbors.right !== lookup.get(`${r}-${c}`)) cell.classList.add('cage-border-right');
+      if (neighbors.bottom !== lookup.get(`${r}-${c}`)) cell.classList.add('cage-border-bottom');
+      if (neighbors.left !== lookup.get(`${r}-${c}`)) cell.classList.add('cage-border-left');
+    });
+  });
 }
 
 function renderBoard() {
