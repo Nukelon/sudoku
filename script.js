@@ -6,6 +6,30 @@ const difficultyClues = {
   hard: 28,
 };
 
+const APP_VERSION = '1.0.1';
+
+function ensureFreshAssets() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => registration.unregister());
+    });
+  }
+
+  const savedVersion = localStorage.getItem('sudoku:version');
+  if (savedVersion && savedVersion !== APP_VERSION) {
+    window.location.reload();
+  }
+  if (savedVersion !== APP_VERSION) {
+    localStorage.setItem('sudoku:version', APP_VERSION);
+  }
+
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+}
+
 let basePuzzle = [];
 let puzzle = [];
 let solution = [];
@@ -301,6 +325,7 @@ function attachPadEvents() {
 }
 
 function init() {
+  ensureFreshAssets();
   attachPadEvents();
   document.getElementById('new-game').addEventListener('click', newGame);
   difficultyEl.addEventListener('change', newGame);
