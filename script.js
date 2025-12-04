@@ -1,20 +1,12 @@
 const BOARD_SIZE = 9;
 const BOX_SIZE = 3;
-const variantConfigs = {
-  classic: { label: '经典数独', description: '行、列、宫均包含 1-9' },
-  diagonal: { label: '对角线数独', description: '额外要求两条对角线包含 1-9' },
-  hyper: {
-    label: '超数独',
-    description: '在四个中心 3×3 宫内也需包含 1-9',
-  },
-};
 const difficultyClues = {
   easy: 44,
   medium: 36,
   hard: 28,
 };
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.0.1';
 
 function ensureFreshAssets() {
   if ('serviceWorker' in navigator) {
@@ -42,12 +34,10 @@ let basePuzzle = [];
 let puzzle = [];
 let solution = [];
 let selected = null;
-let currentVariant = 'classic';
 
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const difficultyEl = document.getElementById('difficulty');
-const variantEl = document.getElementById('variant');
 
 function shuffle(arr) {
   const copy = [...arr];
@@ -62,73 +52,28 @@ function deepCopy(board) {
   return board.map((row) => [...row]);
 }
 
-function getVariantPeers(row, col, variant) {
-  const peers = new Set();
-
-  for (let i = 0; i < BOARD_SIZE; i += 1) {
-    peers.add(`${row}-${i}`);
-    peers.add(`${i}-${col}`);
+function isSafe(board, row, col, num) {
+  for (let x = 0; x < BOARD_SIZE; x += 1) {
+    if (board[row][x] === num || board[x][col] === num) return false;
   }
-
   const boxRow = Math.floor(row / BOX_SIZE) * BOX_SIZE;
   const boxCol = Math.floor(col / BOX_SIZE) * BOX_SIZE;
   for (let r = 0; r < BOX_SIZE; r += 1) {
     for (let c = 0; c < BOX_SIZE; c += 1) {
-      peers.add(`${boxRow + r}-${boxCol + c}`);
+      if (board[boxRow + r][boxCol + c] === num) return false;
     }
   }
-
-  if (variant === 'diagonal') {
-    if (row === col) {
-      for (let i = 0; i < BOARD_SIZE; i += 1) {
-        peers.add(`${i}-${i}`);
-      }
-    }
-    if (row + col === BOARD_SIZE - 1) {
-      for (let i = 0; i < BOARD_SIZE; i += 1) {
-        peers.add(`${i}-${BOARD_SIZE - 1 - i}`);
-      }
-    }
-  }
-
-  if (variant === 'hyper') {
-    const hyperStarts = [
-      [1, 1],
-      [1, 5],
-      [5, 1],
-      [5, 5],
-    ];
-    const inHyper = hyperStarts.find(
-      ([startRow, startCol]) =>
-        row >= startRow && row < startRow + BOX_SIZE && col >= startCol && col < startCol + BOX_SIZE,
-    );
-    if (inHyper) {
-      const [startRow, startCol] = inHyper;
-      for (let r = 0; r < BOX_SIZE; r += 1) {
-        for (let c = 0; c < BOX_SIZE; c += 1) {
-          peers.add(`${startRow + r}-${startCol + c}`);
-        }
-      }
-    }
-  }
-
-  peers.delete(`${row}-${col}`);
-  return Array.from(peers).map((key) => key.split('-').map(Number));
+  return true;
 }
 
-function isSafe(board, row, col, num, variant) {
-  const peers = getVariantPeers(row, col, variant);
-  return peers.every(([r, c]) => board[r][c] !== num);
-}
-
-function solve(board, variant) {
+function solve(board) {
   for (let row = 0; row < BOARD_SIZE; row += 1) {
     for (let col = 0; col < BOARD_SIZE; col += 1) {
       if (board[row][col] === 0) {
         for (const num of shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9])) {
-          if (isSafe(board, row, col, num, variant)) {
+          if (isSafe(board, row, col, num)) {
             board[row][col] = num;
-            if (solve(board, variant)) return true;
+            if (solve(board)) return true;
             board[row][col] = 0;
           }
         }
@@ -139,14 +84,14 @@ function solve(board, variant) {
   return true;
 }
 
-function countSolutions(board, limit = 2, variant) {
+function countSolutions(board, limit = 2) {
   let count = 0;
   function backtrack() {
     for (let row = 0; row < BOARD_SIZE; row += 1) {
       for (let col = 0; col < BOARD_SIZE; col += 1) {
         if (board[row][col] === 0) {
           for (let num = 1; num <= BOARD_SIZE; num += 1) {
-            if (isSafe(board, row, col, num, variant)) {
+            if (isSafe(board, row, col, num)) {
               board[row][col] = num;
               backtrack();
               if (count >= limit) return;
@@ -163,14 +108,14 @@ function countSolutions(board, limit = 2, variant) {
   return count;
 }
 
-function generateSolved(variant) {
+function generateSolved() {
   const board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(0));
-  solve(board, variant);
+  solve(board);
   return board;
 }
 
-function generatePuzzle(difficulty, variant) {
-  const filled = generateSolved(variant);
+function generatePuzzle(difficulty) {
+  const filled = generateSolved();
   const puzzleBoard = deepCopy(filled);
   const clues = difficultyClues[difficulty] ?? difficultyClues.medium;
   const cells = shuffle([...Array(BOARD_SIZE * BOARD_SIZE).keys()]);
@@ -183,7 +128,7 @@ function generatePuzzle(difficulty, variant) {
     puzzleBoard[row][col] = 0;
 
     const temp = deepCopy(puzzleBoard);
-    const solutions = countSolutions(temp, 2, variant);
+    const solutions = countSolutions(temp);
     const remaining = BOARD_SIZE * BOARD_SIZE - removed - 1;
     if (solutions !== 1 || remaining < clues) {
       puzzleBoard[row][col] = backup;
@@ -247,12 +192,10 @@ function highlightRelated() {
   const row = Number(selected.dataset.row);
   const col = Number(selected.dataset.col);
   const value = selected.textContent;
-  const peers = getVariantPeers(row, col, currentVariant);
-  const peerKeys = new Set(peers.map(([r, c]) => `${r}-${c}`));
   cells.forEach((cell) => {
     const r = Number(cell.dataset.row);
     const c = Number(cell.dataset.col);
-    if (peerKeys.has(`${r}-${c}`)) {
+    if (r === row || c === col || (Math.floor(r / 3) === Math.floor(row / 3) && Math.floor(c / 3) === Math.floor(col / 3))) {
       cell.classList.add('same-line');
     }
     if (value && cell.textContent === value) {
@@ -284,11 +227,23 @@ function validateConflicts() {
     const col = Number(cell.dataset.col);
     const value = puzzle[row][col];
     if (value === 0) continue;
-    const hasConflict = getVariantPeers(row, col, currentVariant).some(
-      ([r, c]) => puzzle[r][c] === value,
-    );
 
-    if (hasConflict) cell.classList.add('conflict');
+    const hasRowConflict = puzzle[row].some((v, i) => v === value && i !== col);
+    const hasColConflict = puzzle.some((r, i) => r[col] === value && i !== row);
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
+    let hasBoxConflict = false;
+    for (let r = 0; r < 3; r += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        if ((boxRow + r !== row || boxCol + c !== col) && puzzle[boxRow + r][boxCol + c] === value) {
+          hasBoxConflict = true;
+        }
+      }
+    }
+
+    if (hasRowConflict || hasColConflict || hasBoxConflict) {
+      cell.classList.add('conflict');
+    }
   }
 }
 
@@ -307,17 +262,14 @@ function setStatus(text, success = false) {
 }
 
 function newGame() {
-  currentVariant = variantEl.value;
-  const { puzzleBoard, solutionBoard } = generatePuzzle(difficultyEl.value, currentVariant);
+  const { puzzleBoard, solutionBoard } = generatePuzzle(difficultyEl.value);
   basePuzzle = deepCopy(puzzleBoard);
   puzzle = deepCopy(puzzleBoard);
   solution = solutionBoard;
   buildBoard();
   renderBoard();
   selected = null;
-  setStatus(
-    `已生成${variantConfigs[currentVariant]?.label ?? '新玩法'}棋盘，祝解谜愉快！`,
-  );
+  setStatus('已生成新棋盘，祝解谜愉快！');
 }
 
 function resetBoard() {
@@ -377,7 +329,6 @@ function init() {
   attachPadEvents();
   document.getElementById('new-game').addEventListener('click', newGame);
   difficultyEl.addEventListener('change', newGame);
-  variantEl.addEventListener('change', newGame);
   document.getElementById('reset').addEventListener('click', () => {
     const confirmReset = window.confirm('确定要重置当前棋盘吗？');
     if (confirmReset) resetBoard();
