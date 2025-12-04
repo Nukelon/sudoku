@@ -108,8 +108,8 @@ main {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(var(--board-size, 9), minmax(0, 1fr));
-  grid-template-rows: repeat(var(--board-size, 9), minmax(0, 1fr));
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
   width: min(560px, calc(100vw - 2 * var(--page-pad)));
   aspect-ratio: 1 / 1;
   background: var(--surface);
@@ -130,7 +130,6 @@ main {
   background: #fff;
   transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
   cursor: pointer;
-  position: relative;
 }
 
 .cell[data-fixed="true"] {
@@ -157,20 +156,6 @@ main {
 
 .cell.box-border-right { border-right: 2px solid #cbd5e1; }
 .cell.box-border-bottom { border-bottom: 2px solid #cbd5e1; }
-.cell.cage-border-top { border-top: 2px dashed #cbd5e1; }
-.cell.cage-border-bottom { border-bottom: 2px dashed #cbd5e1; }
-.cell.cage-border-left { border-left: 2px dashed #cbd5e1; }
-.cell.cage-border-right { border-right: 2px dashed #cbd5e1; }
-
-.cell.cage-label::before {
-  content: attr(data-cage-sum);
-  position: absolute;
-  top: 4px;
-  left: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-}
 
 .pad {
   display: grid;
@@ -178,10 +163,6 @@ main {
   gap: 10px;
   width: min(560px, calc(100vw - 2 * var(--page-pad)));
   margin: 0 auto;
-}
-
-.pad-grid {
-  display: contents;
 }
 
 .pad-btn {
