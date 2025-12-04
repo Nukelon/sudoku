@@ -60,6 +60,12 @@ body {
   gap: 8px;
 }
 
+#mini-size-wrapper {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
 button, select {
   font: inherit;
   border-radius: 10px;
@@ -127,10 +133,34 @@ main {
   display: block;
   padding: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at center, #f8fafc 20%, #e2e8f0 21%, transparent 22%),
-    radial-gradient(circle at center, #f8fafc 44%, #e2e8f0 45%, transparent 46%),
-    radial-gradient(circle at center, #f8fafc 68%, #e2e8f0 69%, transparent 70%),
-    #ffffff;
+  background: #ffffff;
+}
+
+.ring-guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  display: block;
+}
+
+.ring-circle {
+  position: absolute;
+  border: 2px solid rgba(71, 85, 105, 0.35);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+}
+
+.ring-ray {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: rgba(71, 85, 105, 0.3);
+  left: 50%;
+  top: 0;
+  transform-origin: center;
 }
 
 .cell {
@@ -177,10 +207,21 @@ main {
 
 .cell.box-border-right { border-right: 2px solid #cbd5e1; }
 .cell.box-border-bottom { border-bottom: 2px solid #cbd5e1; }
+.grid-mode .cell.box-border-right,
+.grid-mode .cell.box-border-bottom {
+  border-color: #94a3b8;
+  border-width: 3px;
+}
 .cell.cage-border-top { border-top: 2px dashed #cbd5e1; }
 .cell.cage-border-bottom { border-bottom: 2px dashed #cbd5e1; }
 .cell.cage-border-left { border-left: 2px dashed #cbd5e1; }
 .cell.cage-border-right { border-right: 2px dashed #cbd5e1; }
+.cell.cage-border-top,
+.cell.cage-border-bottom,
+.cell.cage-border-left,
+.cell.cage-border-right {
+  border-color: #475569;
+}
 
 .cell.cage-label::before {
   content: attr(data-cage-sum);

@@ -1,9 +1,11 @@
-const APP_VERSION = '1.2.1';
+const APP_VERSION = '1.3.0';
 
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const difficultyEl = document.getElementById('difficulty');
 const variantEl = document.getElementById('variant');
+const miniSizeEl = document.getElementById('mini-size');
+const miniSizeWrapperEl = document.getElementById('mini-size-wrapper');
 const padEl = document.getElementById('pad');
 
 function ensureFreshAssets() {
@@ -136,8 +138,7 @@ function buildJigsawRegions(layout) {
   return regions;
 }
 
-function buildRingRegions() {
-  const size = 9;
+function buildRingRegions(size = 9) {
   const regions = [];
   // rings (inner to outer)
   for (let ring = 0; ring < size; ring += 1) {
@@ -168,6 +169,26 @@ const jigsaw7Layout = [
   [5, 5, 2, 3, 6, 6, 6],
 ];
 
+const miniVariantConfigs = {
+  4: {
+    symbols: [1, 2, 3, 4],
+    buildRegions: () => buildStandardRegions(4, 2, 2),
+    clueTargets: { easy: 10, medium: 8, hard: 6 },
+    box: { rows: 2, cols: 2 },
+  },
+  6: {
+    symbols: [1, 2, 3, 4, 5, 6],
+    buildRegions: () => buildStandardRegions(6, 2, 3),
+    clueTargets: { easy: 20, medium: 16, hard: 14 },
+    box: { rows: 2, cols: 3 },
+  },
+  7: {
+    symbols: [1, 2, 3, 4, 5, 6, 7],
+    buildRegions: () => [...buildRowRegions(7), ...buildColumnRegions(7), ...buildJigsawRegions(jigsaw7Layout)],
+    clueTargets: { easy: 28, medium: 24, hard: 20 },
+  },
+};
+
 const variants = [
   {
     id: 'classic',
@@ -179,30 +200,15 @@ const variants = [
     box: { rows: 3, cols: 3 },
   },
   {
-    id: 'mini4',
-    name: '迷你数独 4×4',
+    id: 'mini',
+    name: '迷你数独',
     size: 4,
-    symbols: [1, 2, 3, 4],
-    buildRegions: () => buildStandardRegions(4, 2, 2),
-    clueTargets: { easy: 10, medium: 8, hard: 6 },
-    box: { rows: 2, cols: 2 },
-  },
-  {
-    id: 'mini6',
-    name: '迷你数独 6×6',
-    size: 6,
-    symbols: [1, 2, 3, 4, 5, 6],
-    buildRegions: () => buildStandardRegions(6, 2, 3),
-    clueTargets: { easy: 20, medium: 16, hard: 14 },
-    box: { rows: 2, cols: 3 },
-  },
-  {
-    id: 'mini7',
-    name: '迷你数独 7×7（不规则宫）',
-    size: 7,
-    symbols: [1, 2, 3, 4, 5, 6, 7],
-    buildRegions: () => [...buildRowRegions(7), ...buildColumnRegions(7), ...buildJigsawRegions(jigsaw7Layout)],
-    clueTargets: { easy: 28, medium: 24, hard: 20 },
+    defaultSize: 4,
+    sizes: [4, 6, 7],
+    symbols: miniVariantConfigs[4].symbols,
+    buildRegions: miniVariantConfigs[4].buildRegions,
+    clueTargets: miniVariantConfigs[4].clueTargets,
+    box: miniVariantConfigs[4].box,
   },
   {
     id: 'hyper',
@@ -227,7 +233,7 @@ const variants = [
     name: '环形数独',
     size: 9,
     symbols: [1, 2, 3, 4, 5, 6, 7, 8, 9],
-    buildRegions: () => buildRingRegions(),
+    buildRegions: () => buildRingRegions(9),
     clueTargets: { easy: 40, medium: 34, hard: 28 },
   },
   {
@@ -248,6 +254,7 @@ let solution = [];
 let selected = null;
 let currentRules = null;
 let currentVariant = variants[0];
+let currentMiniSize = miniVariantConfigs[4] ? 4 : 4;
 
 function createRegionMap(regions, size) {
   const regionMap = Array.from({ length: size * size }, () => []);
@@ -267,6 +274,35 @@ function createCageMap(cages, size) {
     });
   });
   return cageMap;
+}
+
+function resolveMiniVariant(baseVariant) {
+  const requestedSize = Number(miniSizeEl.value) || baseVariant.defaultSize || currentMiniSize;
+  const allowedSizes = baseVariant.sizes ?? Object.keys(miniVariantConfigs).map(Number);
+  const fallbackSize = baseVariant.defaultSize ?? allowedSizes[0];
+  const size = miniVariantConfigs[requestedSize] ? requestedSize : fallbackSize;
+  const config = miniVariantConfigs[size];
+  currentMiniSize = size;
+  if (miniSizeEl.value !== String(size)) {
+    miniSizeEl.value = size;
+  }
+  return { size, config };
+}
+
+function buildVariantFromSelection() {
+  const baseVariant = variants.find((v) => v.id === variantEl.value) ?? variants[0];
+  const isMini = baseVariant.id === 'mini';
+  miniSizeWrapperEl.style.display = isMini ? 'inline-flex' : 'none';
+  if (!isMini) return baseVariant;
+  const { size, config } = resolveMiniVariant(baseVariant);
+  return {
+    ...baseVariant,
+    size,
+    symbols: config.symbols,
+    buildRegions: config.buildRegions,
+    clueTargets: config.clueTargets,
+    box: config.box,
+  };
 }
 
 function buildRuleSet(variant, extras = {}) {
@@ -432,18 +468,20 @@ function buildRandomCages(solution, size) {
 }
 
 function generateKillerPuzzle(variant, difficulty) {
-  const maxAttempts = 6;
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+  const maxAttempts = 4;
+  const hardDeadline = Date.now() + 4500;
+  for (let attempt = 0; attempt < maxAttempts && Date.now() < hardDeadline; attempt += 1) {
     const baseRules = buildRuleSet(variant);
     const solved = generateSolved(baseRules);
     const cages = buildRandomCages(solved, variant.size);
     const rulesWithCage = buildRuleSet(variant, { cages });
     const puzzleBoard = createEmptyBoard(variant.size);
-    const givens = difficulty === 'easy' ? 18 : difficulty === 'medium' ? 12 : 8;
+    const givens = difficulty === 'easy' ? 24 : difficulty === 'medium' ? 18 : 14;
     const filler = shuffle([...Array(variant.size * variant.size).keys()]).slice(0, givens);
     filler.forEach((idx) => setCellValue(puzzleBoard, idx, variant.size, getCellValue(solved, idx, variant.size)));
     const temp = deepCopy(puzzleBoard);
-    if (countSolutions(temp, rulesWithCage, { limit: 1, deadline: Date.now() + 1500 }) === 1) {
+    const solverDeadline = Math.min(hardDeadline, Date.now() + 1000);
+    if (countSolutions(temp, rulesWithCage, { limit: 1, deadline: solverDeadline }) === 1) {
       return { puzzleBoard, solutionBoard: solved, rules: rulesWithCage };
     }
   }
@@ -465,12 +503,25 @@ function generatePuzzleForVariant(variant, difficulty) {
   return { puzzleBoard, solutionBoard: solved, rules };
 }
 
+function ringRadius(ring, size) {
+  const inner = 18;
+  const outer = 48;
+  const step = (outer - inner) / Math.max(1, size - 1);
+  return inner + step * ring;
+}
+
+function ringBoundaryRadius(ring, size) {
+  if (ring >= size - 1) return ringRadius(ring, size);
+  const next = ringRadius(ring + 1, size);
+  const current = ringRadius(ring, size);
+  return (next + current) / 2;
+}
+
 function applyRingLayout(cell, ring, ray, size) {
   const angleStep = 360 / size;
   const angle = (ray + 0.5) * angleStep - 90;
-  const ringSpacing = 45 / size;
-  const radius = 10 + ringSpacing * (ring + 0.5);
-  const cellSize = Math.max(6, 36 / size);
+  const radius = ringRadius(ring, size);
+  const cellSize = Math.max(5, 52 / size);
   const rad = (angle * Math.PI) / 180;
   cell.style.left = `${50 + radius * Math.cos(rad)}%`;
   cell.style.top = `${50 + radius * Math.sin(rad)}%`;
@@ -487,6 +538,29 @@ function clearRingLayout(cell) {
   cell.style.transform = '';
 }
 
+function renderRingGuides(size) {
+  const guideLayer = document.createElement('div');
+  guideLayer.className = 'ring-guides';
+  for (let ring = 0; ring < size - 1; ring += 1) {
+    const radius = ringBoundaryRadius(ring, size);
+    const circle = document.createElement('div');
+    circle.className = 'ring-circle';
+    circle.style.width = `${radius * 2}%`;
+    circle.style.height = `${radius * 2}%`;
+    circle.style.marginLeft = `${50 - radius}%`;
+    circle.style.marginTop = `${50 - radius}%`;
+    guideLayer.appendChild(circle);
+  }
+  for (let ray = 0; ray < size; ray += 1) {
+    const angle = (360 / size) * ray;
+    const line = document.createElement('div');
+    line.className = 'ring-ray';
+    line.style.transform = `translate(-50%, 0) rotate(${angle}deg)`;
+    guideLayer.appendChild(line);
+  }
+  boardEl.appendChild(guideLayer);
+}
+
 function buildBoard() {
   boardEl.innerHTML = '';
   boardEl.style.setProperty('--board-size', currentRules.size);
@@ -499,6 +573,9 @@ function buildBoard() {
   boardEl.style.gridTemplateRows = isRingVariant
     ? ''
     : `repeat(${currentRules.size}, minmax(0, 1fr))`;
+  if (isRingVariant) {
+    renderRingGuides(currentRules.size);
+  }
   for (let row = 0; row < currentRules.size; row += 1) {
     for (let col = 0; col < currentRules.size; col += 1) {
       const index = indexFromRC(row, col, currentRules.size);
@@ -687,8 +764,9 @@ function applyCageStyles() {
 }
 
 function newGame() {
-  const variantId = variantEl.value;
-  currentVariant = variants.find((v) => v.id === variantId) ?? variants[0];
+  setStatus('正在生成新棋盘…');
+  currentVariant = buildVariantFromSelection();
+  renderPad(currentVariant.symbols);
   const { puzzleBoard, solutionBoard, rules } = generatePuzzleForVariant(currentVariant, difficultyEl.value);
   basePuzzle = deepCopy(puzzleBoard);
   puzzle = deepCopy(puzzleBoard);
@@ -767,6 +845,22 @@ function renderPad(symbols) {
   padEl.appendChild(clearBtn);
 }
 
+function initMiniSizeOptions() {
+  miniSizeEl.innerHTML = '';
+  const miniVariant = variants.find((v) => v.id === 'mini');
+  if (!miniVariant) return;
+  const options = miniVariant.sizes ?? Object.keys(miniVariantConfigs).map(Number);
+  options.forEach((size) => {
+    const option = document.createElement('option');
+    option.value = size;
+    option.textContent = `${size}×${size}`;
+    miniSizeEl.appendChild(option);
+  });
+  const initialSize = miniVariant.defaultSize ?? options[0];
+  currentMiniSize = initialSize;
+  miniSizeEl.value = initialSize;
+}
+
 function initVariantOptions() {
   variants.forEach((variant) => {
     const option = document.createElement('option');
@@ -779,15 +873,19 @@ function initVariantOptions() {
 
 function init() {
   ensureFreshAssets();
+  initMiniSizeOptions();
   initVariantOptions();
+  currentVariant = buildVariantFromSelection();
   renderPad(currentVariant.symbols);
-  document.getElementById('new-game').addEventListener('click', () => {
+  document.getElementById('new-game').addEventListener('click', newGame);
+  difficultyEl.addEventListener('change', newGame);
+  variantEl.addEventListener('change', () => {
+    currentVariant = buildVariantFromSelection();
     renderPad(currentVariant.symbols);
     newGame();
   });
-  difficultyEl.addEventListener('change', newGame);
-  variantEl.addEventListener('change', () => {
-    currentVariant = variants.find((v) => v.id === variantEl.value) ?? variants[0];
+  miniSizeEl.addEventListener('change', () => {
+    currentVariant = buildVariantFromSelection();
     renderPad(currentVariant.symbols);
     newGame();
   });
